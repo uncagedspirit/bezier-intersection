@@ -23,7 +23,7 @@ void GLWidget::paintGL() {
     glTranslatef(0, 0, -5);
 
     // Draw control points and polygon for curve 1
-    glPointSize(10.0f);
+    glPointSize(4.0f);
     glBegin(GL_POINTS);
     glColor3f(1, 0, 0);
     for (auto& pt : controlPoints1) glVertex2f(pt.first, pt.second);
@@ -41,7 +41,7 @@ void GLWidget::paintGL() {
     glEnd();
 
     // Draw control points and polygon for curve 2
-    glPointSize(10.0f);
+    glPointSize(4.0f);
     glBegin(GL_POINTS);
     glColor3f(0, 0, 1);
     for (auto& pt : controlPoints2) glVertex2f(pt.first, pt.second);
@@ -69,9 +69,8 @@ void GLWidget::paintGL() {
 void GLWidget::mousePressEvent(QMouseEvent* event) {
     float x = screenToGLX(event->position().x());
     float y = screenToGLY(event->position().y());
-    QPair<float, float> clickPos(x, y);
 
-    // Check if a control point is clicked (curve 1)
+    // Check for dragging first
     for (int i = 0; i < controlPoints1.size(); ++i) {
         float dx = controlPoints1[i].first - x;
         float dy = controlPoints1[i].second - y;
@@ -81,7 +80,6 @@ void GLWidget::mousePressEvent(QMouseEvent* event) {
             return;
         }
     }
-    // Check if a control point is clicked (curve 2)
     for (int i = 0; i < controlPoints2.size(); ++i) {
         float dx = controlPoints2[i].first - x;
         float dy = controlPoints2[i].second - y;
@@ -92,22 +90,25 @@ void GLWidget::mousePressEvent(QMouseEvent* event) {
         }
     }
 
-    // If not dragging, add new points as before
-    if (currentCurve == 1 && controlPoints1.size() < maxPoints) {
-        controlPoints1.append(clickPos);
-        if (controlPoints1.size() == maxPoints) {
-            generateBezierCurve(controlPoints1, bezierPoints1);
-            currentCurve = 2;
-        }
-    } else if (currentCurve == 2 && controlPoints2.size() < maxPoints) {
-        controlPoints2.append(clickPos);
-        if (controlPoints2.size() == maxPoints) {
-            generateBezierCurve(controlPoints2, bezierPoints2);
-            findIntersections();
-            currentCurve = 1;
-        }
+    // Right click: switch curve
+    if (event->button() == Qt::RightButton) {
+        currentCurve = (currentCurve == 1) ? 2 : 1;
+        update();
+        return;
     }
-    update();
+
+    // Left click: add point to current curve
+    if (event->button() == Qt::LeftButton) {
+        if (currentCurve == 1) {
+            controlPoints1.append({x, y});
+            generateBezierCurve(controlPoints1, bezierPoints1);
+        } else {
+            controlPoints2.append({x, y});
+            generateBezierCurve(controlPoints2, bezierPoints2);
+        }
+        findIntersections();
+        update();
+    }
 }
 
 void GLWidget::generateBezierCurve(QVector<QPair<float, float>>& ctrl, QVector<QPair<float, float>>& curve) {
