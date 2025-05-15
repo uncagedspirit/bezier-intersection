@@ -71,6 +71,28 @@ void GLWidget::mousePressEvent(QMouseEvent* event) {
     float y = screenToGLY(event->position().y());
     QPair<float, float> clickPos(x, y);
 
+    // Check if a control point is clicked (curve 1)
+    for (int i = 0; i < controlPoints1.size(); ++i) {
+        float dx = controlPoints1[i].first - x;
+        float dy = controlPoints1[i].second - y;
+        if (dx * dx + dy * dy <= pointRadius * pointRadius) {
+            draggingPointIndex = i;
+            draggingCurve = 1;
+            return;
+        }
+    }
+    // Check if a control point is clicked (curve 2)
+    for (int i = 0; i < controlPoints2.size(); ++i) {
+        float dx = controlPoints2[i].first - x;
+        float dy = controlPoints2[i].second - y;
+        if (dx * dx + dy * dy <= pointRadius * pointRadius) {
+            draggingPointIndex = i;
+            draggingCurve = 2;
+            return;
+        }
+    }
+
+    // If not dragging, add new points as before
     if (currentCurve == 1 && controlPoints1.size() < maxPoints) {
         controlPoints1.append(clickPos);
         if (controlPoints1.size() == maxPoints) {
@@ -81,7 +103,7 @@ void GLWidget::mousePressEvent(QMouseEvent* event) {
         controlPoints2.append(clickPos);
         if (controlPoints2.size() == maxPoints) {
             generateBezierCurve(controlPoints2, bezierPoints2);
-            findIntersections(); // Add this line
+            findIntersections();
             currentCurve = 1;
         }
     }
@@ -142,6 +164,27 @@ void GLWidget::findIntersections() {
             }
         }
     }
+}
+
+void GLWidget::mouseMoveEvent(QMouseEvent* event) {
+    if (draggingPointIndex != -1 && draggingCurve != 0) {
+        float x = screenToGLX(event->position().x());
+        float y = screenToGLY(event->position().y());
+        if (draggingCurve == 1) {
+            controlPoints1[draggingPointIndex] = {x, y};
+            generateBezierCurve(controlPoints1, bezierPoints1);
+        } else if (draggingCurve == 2) {
+            controlPoints2[draggingPointIndex] = {x, y};
+            generateBezierCurve(controlPoints2, bezierPoints2);
+        }
+        findIntersections();
+        update();
+    }
+}
+
+void GLWidget::mouseReleaseEvent(QMouseEvent*) {
+    draggingPointIndex = -1;
+    draggingCurve = 0;
 }
 
 float GLWidget::screenToGLX(float x) {

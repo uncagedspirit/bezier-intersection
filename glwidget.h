@@ -22,9 +22,15 @@ private:
     QVector<QPair<float, float>> controlPoints2;
     QVector<QPair<float, float>> bezierPoints2;
     QVector<QPair<float, float>> intersectionPoints; 
+
+    int draggingPointIndex = -1;
+    int draggingCurve = 0;
     int currentCurve = 1; // 1 or 2
     int maxPoints = 4;    // Cubic Bezier
     float pointRadius = 0.08f;
+
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
 
     void generateBezierCurve(QVector<QPair<float, float>>& ctrl, QVector<QPair<float, float>>& curve);
     void findIntersections();
